@@ -36,9 +36,11 @@ app = FastAPI(
 )
 
 # CORS middleware configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify frontend origin
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -335,6 +337,7 @@ async def color_palette_endpoint(request: dict):
         raise HTTPException(status_code=500, detail=f"Failed to generate color palette: {str(e)}")
 
 
+@app.post("/recommend-outfit", response_model=OutfitResponse)
 async def recommend_outfit_endpoint(request: OutfitRequest):
     """
     POST /recommend-outfit
