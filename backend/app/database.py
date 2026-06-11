@@ -743,18 +743,16 @@ if settings.MONGODB_URI:
 
 def seed_database_if_empty():
     """
-    Seeds MongoDB collection with the rich product catalog.
-    Always resyncs to ensure store data matches PRODUCTS_DB.
+    Always drops and reseeds to ensure product_url and all fields are fresh.
     """
     if not mongodb_connected or products_collection is None:
         print("Seeding skipped. MongoDB is not connected.")
         return
     try:
-        # Always drop and reseed to keep MongoDB in sync with PRODUCTS_DB
         products_collection.delete_many({})
         seeded_data = [item.copy() for item in PRODUCTS_DB]
         products_collection.insert_many(seeded_data)
-        print(f"Synced {len(seeded_data)} products into MongoDB.")
+        print(f"Reseeded {len(seeded_data)} products into MongoDB.")
     except Exception as e:
         print(f"Failed to seed MongoDB: {e}")
 
