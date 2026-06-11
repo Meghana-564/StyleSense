@@ -777,8 +777,6 @@ def get_all_products() -> list:
     else:
         raw_products = [item.copy() for item in PRODUCTS_DB]
 
-    # Generate accurate e-commerce search URLs dynamically — ignore static DB URLs
-    for prod in raw_products:
-        prod["product_url"] = ""  # will be built dynamically in find_similar_products
-
+    # Product URLs are built dynamically in find_similar_products using brand + color + sub_category
+    # Do not blank them here — keep the static fallback URL from PRODUCTS_DB as a safety net
     return raw_products

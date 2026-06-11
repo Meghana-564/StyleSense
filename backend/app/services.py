@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import urllib.parse
 from typing import List, Dict, Any, Optional
 from groq import Groq
 import google.generativeai as genai
@@ -373,11 +374,10 @@ def extract_brand(name: str) -> str:
 
 def get_accurate_search_url(brand: str, user_colors: list, sub_category: str, prod_name: str, store: str) -> str:
     import urllib.parse
-    
-    # Construct search terms
+
     color_str = " ".join(user_colors) if user_colors else ""
     sub_cat = sub_category if sub_category else ""
-    
+
     query_terms = []
     if brand:
         query_terms.append(brand)
@@ -385,19 +385,15 @@ def get_accurate_search_url(brand: str, user_colors: list, sub_category: str, pr
         query_terms.append(color_str)
     if sub_cat:
         query_terms.append(sub_cat)
-        
-    # If we don't have enough terms, fall back to the product name
-    if len(query_terms) < 2:
-        query = prod_name
-    else:
-        query = " ".join(query_terms)
-        
+
+    # Always fall back to full product name if not enough terms
+    query = " ".join(query_terms) if len(query_terms) >= 2 else prod_name
+
     encoded_query = urllib.parse.quote_plus(query)
     store_lower = store.lower()
-    if "amazon" in store_lower:
-        return f"https://www.amazon.in/s?k={encoded_query}"
-    elif "flipkart" in store_lower:
+    if "flipkart" in store_lower:
         return f"https://www.flipkart.com/search?q={encoded_query}&otracker=search"
+    # Default to Amazon (covers Amazon + Myntra fallback)
     return f"https://www.amazon.in/s?k={encoded_query}"
 
 def find_similar_products(gender: str, category: str, detected_item: str, colors: List[str], style: str, budget: float, image_bytes: Optional[bytes] = None, **extra_attrs) -> List[Dict[str, Any]]:
@@ -447,6 +443,9 @@ def find_similar_products(gender: str, category: str, detected_item: str, colors
     for i, p in enumerate(top):
         brand = extract_brand(p["name"])
         url = get_accurate_search_url(brand, colors, search_label, p["name"], p["store"])
+        # Final safety net: if URL is somehow empty, use the static DB URL
+        if not url or url.strip() == "":
+            url = p.get("product_url") or f"https://www.amazon.in/s?k={urllib.parse.quote_plus(p['name'])}"
         total_score = score(p)
         similarity = round(min(99, 60 + total_score * 5), 1)
         results.append({
